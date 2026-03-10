@@ -1,0 +1,127 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: minio-eventsource
+  namespace: {{ .Release.Namespace }}
+spec:
+  eventBusName: {{ .Release.Name }}-eventbus
+  minio:
+    {{- range $i, $value := .Values.buckets }}
+    {{ $value.name }}-event:
+      accessKey:
+        key: accesskey
+        name: argo-secrets
+      bucket:
+        name: {{ $value.bucket }}
+      endpoint: platform-storage-minio.storage.svc.cluster.local:9000
+      events:
+        {{- range $j, $event := $value.events }}
+        - {{ $event }}
+        {{- end }}
+      insecure: true
+      secretKey:
+        key: secretkey
+        name: argo-secrets
+      filter:
+        {{- $value.filter | toYaml | nindent 8 }}
+    {{- end }}
+
+{{- range $i, $flow := $.Values.flows }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: minio-sensor-{{$i}}
+spec:
+  eventBusName: {{ $.Release.Name }}-eventbus
+  dependencies:
+    {{- range $i, $input := $flow.inputs }}
+    - eventName: {{ $input.name }}-event
+      eventSourceName: minio-eventsource
+      name: {{ $input.name }}-sensor
+    {{- end }}
+  triggers:
+    - template:
+        {{- if $flow.serviceAccount }}
+        serviceAccountName: {{ $flow.serviceAccount }}
+        {{- end }}
+        name: {{ $flow.name }}-trigger
+        argoWorkflow:
+          operation: submit
+          parameters:
+          {{- range $i, $input := $flow.inputs }}
+            {{- range $j, $param := $input.parameters }}
+            - dest: spec.arguments.parameters.{{$j}}.value
+              src:
+                dataKey: {{ $param.src }}
+                dependencyName: {{ $input.name }}-sensor
+            {{- end }}
+          {{- end }}
+          source:
+            resource:  # Removed duplicate 'source' key
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: {{ $flow.name }}-
+                namespace: {{ if hasKey $flow "namespace" }}{{ $flow.namespace | default $.Release.Namespace }}{{ else }}{{ $.Release.Namespace }}{{ end }}
+              spec:
+                entrypoint: dag-{{$flow.name}}
+                arguments:
+                  parameters:
+                  {{- range $i, $input := $flow.inputs }}
+                    {{- range $j, $param := $input.parameters }}
+                    - name: {{ $param.name }}
+                      value: OVERRIDEN
+                    {{- end }}
+                  {{- end }}
+                templates:
+                  - name: container-template
+                    inputs:
+                      parameters:
+                    {{- range $i, $input := $flow.inputs }}
+                      {{- range $j, $param := $input.parameters }}
+                        - name: {{ $param.name }}
+                      {{- end }}
+                    {{- end }}
+                    container:
+                      image: {{ $flow.container.image }}
+                      command:
+                        {{- range $i, $c := $flow.container.command}}
+                        - {{ $c }}
+                        {{- end}}
+                      args:
+                      {{- range $i, $arg := $flow.container.args }}
+                        - {{ $arg }}
+                      {{- end }}
+                      env:
+                        - name: AWS_ACCESS_KEY_ID
+                          valueFrom:
+                            secretKeyRef:
+                              name: argo-secrets
+                              key: accesskey
+                        - name: AWS_SECRET_ACCESS_KEY
+                          valueFrom:
+                            secretKeyRef:
+                              name: argo-secrets
+                              key: secretkey
+                        - name: AWS_ENDPOINT_URL
+                          value: http://platform-storage-minio.storage.svc.cluster.local:9000
+                  - name: dag-{{$flow.name}}
+                    dag:
+                      tasks:
+                        - name: {{$flow.name}}
+                          template: container-template
+                          arguments:
+                            parameters:
+                            {{- range $i, $input := $flow.inputs }}
+                              {{- range $j, $param := $input.parameters }}
+                              - name: {{ $param.name }}
+                                value: '{{ printf "{{workflow.parameters.%s}}" $param.name }}'
+                              {{- end }}
+                            {{- end }}
+                workflowMetadata:
+                  labels:
+                    {{- range $i, $label := $flow.labels }}
+                    {{$label.key}}:{{$label.value}}
+                    {{- end }}
+{{- end }}

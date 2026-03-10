@@ -1,0 +1,33 @@
+minio:
+  buckets:
+    - name: datalake
+      policy: none
+      purge: false
+      versioning: false
+
+buckets:
+  - bucket: datalake
+    name: datalake-zip
+    events:
+      - s3:ObjectCreated:Put
+    filter:
+      prefix: ingest/
+      suffix: .zip
+
+flows:
+  - name: unzip
+    inputs:
+      - name: datalake-zip
+        parameters:
+          - name: key
+            src: notification.0.s3.object.key
+    container:
+      image: localhost:5001/mission-control/unzip
+      command: [ "python", "/app/unzip_to_minio.py" ]
+      args:
+        - '--bucket'
+        - 'datalake-test'
+        - '--zip-source'
+        - 's3://datalake/{{inputs.parameters.key}}'
+        - '--prefix'
+        - 'raw/'

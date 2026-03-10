@@ -1,0 +1,25 @@
+argo-workflows:
+  persistence:
+    archive: true
+    postgresql:
+      host: platform-storage-postgresql.storage.svc.cluster.local
+      port: 5432
+      database: mission_control
+      tableName: argo_workflows
+      userNameSecret:
+       name: argo-setup-secrets
+       key: username
+      passwordSecret:
+       name: argo-setup-secrets
+       key: password
+  server:
+    extraArgs:
+      - --auth-mode=server
+    serviceNodePort: 32746
+    serviceType: NodePort
+#buckets:
+#    - name: datalake-test
+#      events:
+#        - s3:ObjectCreated:Put
+#      filter:
+#        suffix: .parquet

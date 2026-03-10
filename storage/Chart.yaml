@@ -1,0 +1,12 @@
+apiVersion: v2
+name: dataplatform-storage
+description: Helm chart for dataplatform Omgeving storage
+type: application
+version: 1.0.0
+dependencies:
+  - name: minio
+    version: 5.4.0
+    repository: https://charts.min.io/
+  - name: postgresql
+    version: 18.4.0
+    repository: https://charts.bitnami.com/bitnami
