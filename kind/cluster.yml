@@ -1,0 +1,36 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      config_path = "/etc/containerd/certs.d"
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # argo workflows
+      - containerPort: 32746
+        hostPort: 2746
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+      # minio
+      - containerPort: 30090
+        hostPort: 9000
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+      - containerPort: 30091
+        hostPort: 9001
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+      # postgres
+      - containerPort: 30543
+        hostPort: 5432
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+      # rest api
+      - containerPort: 30080
+        hostPort: 8080
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+  - role: worker
+  - role: worker
+  - role: worker

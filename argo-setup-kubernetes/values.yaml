@@ -1,0 +1,11 @@
+argo-workflows:
+  controller:
+    workflowNamespaces: [argo]
+  workflow:
+    serviceAccount:
+      name: default
+  server:
+    extraArgs:
+      - --auth-mode=server
+    serviceNodePort: 32746
+    serviceType: NodePort
