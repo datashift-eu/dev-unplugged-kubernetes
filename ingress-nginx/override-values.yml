@@ -1,0 +1,10 @@
+controller:
+  kind: DaemonSet
+  hostNetwork: true
+  service:
+    type: NodePort
+    nodePorts:
+      http: 30088
+      https: 30443
+    ipFamilyPolicy: null
+    ipFamilies: null

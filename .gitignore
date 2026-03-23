@@ -1,2 +1,6 @@
 .idea
 generated
+secret.yml
+*_solution*
+airflow_key
+github_public_key

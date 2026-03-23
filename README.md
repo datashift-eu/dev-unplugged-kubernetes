@@ -77,3 +77,64 @@ kubectl apply -f generated/manifests -n <namespace>
 | rest-api-kubernetes   | rest-api  | mission-control-rest-api |
 | argo-setup-kubernetes | argo      |                          |
 | argo-kubernetes       | argo      |                          |
+
+
+# Airflow - small example using nginx
+See nginx
+```bash
+bash ingress-nginx/start.sh
+```
+
+Adapt the needed here (check as well the exercise below):
+```bash
+bash airflow/start.sh
+```
+
+## DNS routing (DNS to your localhost)
+if on windows :
+C:\Windows\System32\drivers\etc\hosts
+Add an entry into that to ensure proper routing
+127.0.0.1 airflow.host.local
+
+### Networking
+```mermaid
+flowchart TD
+
+%% ================= HOST LEVEL =================
+A[User Browser] --> B[airflow.host.local]
+
+B --> C[127.0.0.1 localhost]
+
+%% ================= KIND PORT MAPPING =================
+C --> D[Kind Node Docker Container]
+
+D --> E[NGINX Ingress Controller HTTP 30088]
+D --> F[NGINX Ingress Controller HTTPS 30443]
+
+%% ================= INGRESS CONTROLLER =================
+E --> G[NGINX Ingress Controller Pod DaemonSet]
+F --> G
+
+%% ================= INGRESS =================
+G --> H[Ingress airflow.host.local rule]
+
+H --> I[Service airflow-api-server ClusterIP]
+
+%% ================= SERVICE =================
+I --> J[Pod 10.244.2.31 8080]
+
+%% ================= RETURN PATH =================
+J --> I --> G --> D --> C --> A
+```
+
+#### Airflow exercise
+setting up git-sync feature by including a secret + configuring using helm values.
+
+[the reference](https://airflow.apache.org/docs/helm-chart/stable/manage-dag-files.html#using-git-sync)
+
+First create a private repo.
+```bash
+ssh-keygen -t rsa -b 4096 -C "your_email@datashift.eu"
+```
+
+Add the public key to your private repo under Settings > Deploy keys!

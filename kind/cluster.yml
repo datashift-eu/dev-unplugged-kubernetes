@@ -6,6 +6,7 @@ containerdConfigPatches:
       config_path = "/etc/containerd/certs.d"
 nodes:
   - role: control-plane
+    image: kindest/node:v1.30.0
     extraPortMappings:
       # argo workflows
       - containerPort: 32746
@@ -31,6 +32,18 @@ nodes:
         hostPort: 8080
         listenAddress: "0.0.0.0"
         protocol: TCP
+      # bind https and https
+      - containerPort: 30088
+        hostPort: 80
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+      - containerPort: 30443
+        hostPort: 443
+        listenAddress: "0.0.0.0"
+        protocol: TCP
   - role: worker
+    image: kindest/node:v1.30.0
   - role: worker
+    image: kindest/node:v1.30.0
   - role: worker
+    image: kindest/node:v1.30.0

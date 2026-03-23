@@ -1,0 +1,66 @@
+# Ingress configuration
+ingress:
+  # Enable all ingress resources
+  # (deprecated - use ingress.web.enabled, ingress.apiServer.enabled and ingress.flower.enabled)
+  enabled: ~
+
+  # Configs for the Ingress of the API Server (Airflow 3+)
+  apiServer:
+    # Enable API Server ingress resource
+    enabled: true
+
+    # Annotations for the API Server Ingress
+    annotations: {}
+
+    # The path for the API Server Ingress
+    path: "/"
+
+    # The pathType for the above path (used only with Kubernetes v1.19 and above)
+    pathType: "ImplementationSpecific"
+
+    # The hostnames or hosts configuration for the API Server Ingress
+    hosts:
+      - name: "airflow.host.local"
+      # configs for API Server Ingress TLS
+        tls:
+          # Enable TLS termination for the API Server Ingress
+          enabled: false
+          # the name of a pre-created Secret containing a TLS private key and certificate
+          secretName: ""
+
+    # The Ingress Class for the API Server Ingress (used only with Kubernetes v1.19 and above)
+    ingressClassName: "nginx"
+
+    # configs for API Server Ingress TLS (Deprecated - renamed to `ingress.apiServer.hosts[*].tls`)
+    tls:
+      # Enable TLS termination for the API Server Ingress
+      enabled: false
+      # the name of a pre-created Secret containing a TLS private key and certificate
+      secretName: ""
+
+    # HTTP paths to add to the API Server Ingress before the default path
+    precedingPaths: []
+
+    # Http paths to add to the API Server Ingress after the default path
+    succeedingPaths: []
+dags:
+  gitSync:
+    enabled: true
+    # git repo clone url
+    # ssh example: git@github.com:apache/airflow.git
+    # https example: https://github.com/apache/airflow.git
+    repo: git@github.com:wousle/airflow-dags.git # Set this to a git repo for yourself :)
+    branch: main
+    depth: 1
+    # the number of consecutive failures allowed before aborting
+    maxFailures: 0
+    # subpath within the repo where dags are located
+    # should be "" if dags are at repo root
+    subPath: "dags"
+    # If you are using an ssh clone url, you can load
+    # the ssh private key to a k8s secret like the one below
+    # Try to find this on artifacthub! (https://artifacthub.io/packages/helm/apache-airflow/airflow)
+    # and specify the name of the secret below
+    sshKeySecret: airflow-ssh-secret
+    knownHosts: |
+       github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
